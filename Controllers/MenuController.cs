@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using CrudApi.Services;
 using System.Text.Json;
+using CrudApi.Implementations;
 
 namespace CrudApi.Controllers
 {
@@ -19,35 +20,37 @@ namespace CrudApi.Controllers
         private readonly string _secretKey;
         private readonly PermissionService _permissionService;
         private readonly SecurityHeaderService _securityHeaderService;
+        private readonly MenuImplementation _menuImplementation;
 
-        public MenuController(ApplicationDbContext context, IConfiguration configuration, PermissionService permissionService, SecurityHeaderService securityHeaderService)
+        public MenuController(ApplicationDbContext context, IConfiguration configuration, PermissionService permissionService, SecurityHeaderService securityHeaderService, MenuImplementation menuImplementation)
         {
             _context = context;
             _configuration = configuration;
             _secretKey = _configuration["ApiSettings:SecretKey"];
             _permissionService = permissionService;
             _securityHeaderService = securityHeaderService;
+            _menuImplementation = menuImplementation;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetMenus()
+        public async Task<IActionResult> GetMenus([FromQuery] string searchQuery = "")
         {
-            var clientId = Request.Headers["X-Client-ID"];
-            var timeStamp = Request.Headers["X-Time-Stamp"];
-            var signature = Request.Headers["X-Signature"];
+            // var clientId = Request.Headers["X-Client-ID"];
+            // var timeStamp = Request.Headers["X-Time-Stamp"];
+            // var signature = Request.Headers["X-Signature"];
 
-            var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/menu");
-            if (!hasPermission)
-            {
-                return Forbid("You do not have permission to view menu.");
-            }
+            // var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/menu");
+            // if (!hasPermission)
+            // {
+            //     return Forbid("You do not have permission to view menu.");
+            // }
 
-            if (!_securityHeaderService.VerifySignature("GET", "api/menu", "", clientId, timeStamp, signature))
-            {
-                return Unauthorized("Invalid signature");
-            }
+            // if (!_securityHeaderService.VerifySignature("GET", "api/menu", "", clientId, timeStamp, signature))
+            // {
+            //     return Unauthorized("Invalid signature");
+            // }
 
-            var menus = await _context.Menus.ToListAsync();
+            var menus = await _menuImplementation.GetMenus(searchQuery);
             if (menus == null || menus.Count == 0)
             {
                 return NotFound("No menus found");
@@ -74,7 +77,7 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
             
-            var menu = await _context.Menus.FirstOrDefaultAsync(r => r.Id == id);
+            var menu = await _menuImplementation.GetMenuById(id);
 
             if (menu == null)
             {
@@ -107,7 +110,7 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
                 
-            var menu = new Menu{
+            var newMenu = new Menu{
                 Name = request.Name,
                 Description = request.Description,
                 Level1 = string.IsNullOrEmpty(request.Level1) ? null : request.Level1,
@@ -119,8 +122,7 @@ namespace CrudApi.Controllers
 
             };
 
-            _context.Menus.Add(menu);
-            await _context.SaveChangesAsync();
+            var menu = await _menuImplementation.CreateMenu(newMenu);
 
             return Ok(menu);
         }
@@ -145,7 +147,7 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var menu = await _context.Menus.FindAsync(id);
+            var menu = await _menuImplementation.GetMenuById(id);
 
             if (menu == null)
             {
@@ -161,7 +163,7 @@ namespace CrudApi.Controllers
             menu.Icon = string.IsNullOrEmpty(request.Icon) ? null : request.Icon;
             menu.Url = request.Url;
 
-            await _context.SaveChangesAsync();
+            await _menuImplementation.UpdateMenu(menu);
             return Ok();
         }
 
@@ -183,15 +185,14 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var menu = await _context.Menus.FindAsync(id);
+            var menu = await _menuImplementation.GetMenuById(id);
 
             if (menu == null)
             {
                 return NotFound();
             }
 
-            _context.Menus.Remove(menu);
-            await _context.SaveChangesAsync();
+            await _menuImplementation.DeleteMenu(menu.Id);
 
             return NoContent();
         }

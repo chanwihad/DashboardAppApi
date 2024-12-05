@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using CrudApi.Services;
 using System.Text.Json;
+using CrudApi.Implementations;
 
 namespace CrudApi.Controllers
 {
@@ -19,18 +20,22 @@ namespace CrudApi.Controllers
         private readonly string _secretKey;
         private readonly PermissionService _permissionService;
         private readonly SecurityHeaderService _securityHeaderService;
+        private readonly RoleImplementation _roleImplementation;
+        private readonly MenuImplementation _menuImplementation;
 
-        public RoleController(ApplicationDbContext context, IConfiguration configuration, PermissionService permissionService, SecurityHeaderService securityHeaderService)
+        public RoleController(ApplicationDbContext context, IConfiguration configuration, PermissionService permissionService, SecurityHeaderService securityHeaderService, RoleImplementation roleImplementation, MenuImplementation menuImplementation)
         {
             _context = context;
             _configuration = configuration;
             _secretKey = _configuration["ApiSettings:SecretKey"];
             _permissionService = permissionService;
             _securityHeaderService = securityHeaderService;
+            _roleImplementation = roleImplementation;
+            _menuImplementation = menuImplementation;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetRoles()
+        public async Task<IActionResult> GetRoles([FromQuery] string searchQuery = "")
         {
             var clientId = Request.Headers["X-Client-ID"];
             var timeStamp = Request.Headers["X-Time-Stamp"];
@@ -47,11 +52,7 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var roles = await _context.Roles.ToListAsync();
-            if (roles == null || roles.Count == 0)
-            {
-                return NotFound("No roles found");
-            }
+            var roles = await _roleImplementation.GetRoles(searchQuery);
 
             return Ok(roles);
         }
@@ -74,10 +75,7 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var role = await _context.Roles
-                .Include(r => r.RoleMenus)
-                .ThenInclude(rp => rp.Menu)
-                .FirstOrDefaultAsync(r => r.Id == id);
+            var role = await _roleImplementation.GetRoleWithMenu(id);
 
             if (role == null)
             {
@@ -120,7 +118,7 @@ namespace CrudApi.Controllers
             if (!ModelState.IsValid)
             return BadRequest(ModelState);
             
-            var role = new Role{
+            var newRole = new Role{
                 Name = request.Name,
                 Description = request.Description,
                 CanCreate = request.CanCreate,
@@ -129,8 +127,10 @@ namespace CrudApi.Controllers
                 CanView = request.CanView
             };
 
-            _context.Roles.Add(role);
-            await _context.SaveChangesAsync();
+            var role = await _roleImplementation.CreateRole(newRole);
+            
+            if(role == null)
+                return StatusCode(500, "Error creating role");
 
             if (request.MenuIds == null || !request.MenuIds.Any())
             {
@@ -138,16 +138,7 @@ namespace CrudApi.Controllers
             }
             else
             {
-                foreach (var menuId in request.MenuIds)
-                {
-                    _context.RoleMenus.Add(new RoleMenus
-                    {
-                        RoleId = role.Id,
-                        MenuId = menuId
-                    });
-                }
-
-                await _context.SaveChangesAsync();
+                await _menuImplementation.SaveRoleMenusBatch(role.Id, request.MenuIds);
                 return Ok(role);
             }
         }
@@ -172,7 +163,7 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var role = await _context.Roles.FindAsync(id);
+            var role = await _roleImplementation.GetRoleById(id);
 
             if (role == null)
             {
@@ -186,22 +177,15 @@ namespace CrudApi.Controllers
             role.CanUpdate = request.CanUpdate;
             role.CanView = request.CanView;
 
-            var existingMenus = _context.RoleMenus.Where(rp => rp.RoleId == role.Id);
-            _context.RoleMenus.RemoveRange(existingMenus);
+            await _roleImplementation.UpdateRole(role);
+
+            var deleteExistingMenus = _menuImplementation.DeleteExistingRoleMenus(role.Id);
             
             if (request.MenuIds != null && request.MenuIds.Any())
             {
-                foreach (var menuId in request.MenuIds)
-                {
-                    _context.RoleMenus.Add(new RoleMenus
-                    {
-                        RoleId = role.Id,
-                        MenuId = menuId
-                    });
-                }
+                await _menuImplementation.SaveRoleMenusBatch(role.Id, request.MenuIds);
             }
 
-            await _context.SaveChangesAsync();
             return Ok();
         }
 
@@ -223,15 +207,14 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var role = await _context.Roles.FindAsync(id);
+            var role = await _roleImplementation.GetRoleById(id);
 
             if (role == null)
             {
                 return NotFound();
             }
 
-            _context.Roles.Remove(role);
-            await _context.SaveChangesAsync();
+            var saveDelete = await _roleImplementation.DeleteRole(id);
 
             return NoContent();
         }

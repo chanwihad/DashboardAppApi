@@ -4,11 +4,15 @@ using CrudApi.Models;
 using CrudApi.Data;
 using CrudApi.Services;
 using BCrypt.Net;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using System.Text.Json;
 
 using System.IdentityModel.Tokens.Jwt;  
 using System.Security.Claims;  
 using Microsoft.IdentityModel.Tokens;  
 using System.Text;  
+using CrudApi.Implementations;
 
 
 namespace CrudApi.Controllers
@@ -19,36 +23,46 @@ namespace CrudApi.Controllers
     {
         private readonly ITokenService _tokenService; 
         private readonly ApplicationDbContext _context; 
+        private readonly IConfiguration _configuration;
+        private readonly string _secretKey;
+        private readonly PermissionService _permissionService;
+        private readonly SecurityHeaderService _securityHeaderService;
+        private readonly UserImplementation _userImplementation;
 
-        public AuthController(ITokenService tokenService, ApplicationDbContext context)
+        public AuthController(ITokenService tokenService, ApplicationDbContext context, IConfiguration configuration, PermissionService permissionService, SecurityHeaderService securityHeaderService, UserImplementation userImplementation)
         {
             _tokenService = tokenService;
             _context = context;
+            _configuration = configuration;
+            _secretKey = _configuration["ApiSettings:SecretKey"];
+            _permissionService = permissionService;
+            _securityHeaderService = securityHeaderService;
+            _userImplementation = userImplementation;
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest model)
-        {
-            if (await _context.Users.AnyAsync(u => u.Username == model.Username))
-                return BadRequest("Username already exists.");
+        // [HttpPost("register")]
+        // public async Task<IActionResult> Register([FromBody] RegisterRequest model)
+        // {
+        //     if (await _context.Users.AnyAsync(u => u.Username == model.Username))
+        //         return BadRequest("Username already exists.");
 
-            var user = new User
-            {
-                Username = model.Username,
-                FullName = model.FullName,
-                Email = model.Email,
-                Password = BCrypt.Net.BCrypt.HashPassword(model.Password), 
-                Status = "Active",
-                MaxRetry = 10,
-                Retry = 0
-            };
+        //     var user = new User
+        //     {
+        //         Username = model.Username,
+        //         FullName = model.FullName,
+        //         Email = model.Email,
+        //         Password = BCrypt.Net.BCrypt.HashPassword(model.Password), 
+        //         Status = "Active",
+        //         MaxRetry = 10,
+        //         Retry = 0
+        //     };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+        //     _context.Users.Add(user);
+        //     await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "Registration successful." });
+        //     return Ok(new { Message = "Registration successful." });
 
-        }
+        // }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest model)
@@ -56,21 +70,10 @@ namespace CrudApi.Controllers
             if (model == null)
                 return BadRequest("Invalid credentials.");
 
-            var user = await _context.Users
-                .Include(u => u.UserRoles)
-                .ThenInclude(ur => ur.Role)
-                .ThenInclude(r => r.RoleMenus)
-                .ThenInclude(rm => rm.Menu)
-                .FirstOrDefaultAsync(u => u.Username == model.Username);
-
+            var user = await _userImplementation.GetUserForLogin(model.Username);
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.Password))  
                 return Unauthorized("Invalid username or password.");
-
-            // var role = await _context.UserRoles
-            //     .Where(ur => ur.UserId == user.Id)
-            //     .Select(ur => ur.Role)
-            //     .FirstOrDefaultAsync();
 
             var role = user.UserRoles.FirstOrDefault()?.Role;
 
@@ -104,20 +107,33 @@ namespace CrudApi.Controllers
         }
 
         [HttpPost("change-password")]
-        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel model)
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordModel request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == model.Username);
+            var clientId = Request.Headers["X-Client-ID"];
+            var timeStamp = Request.Headers["X-Time-Stamp"];
+            var signature = Request.Headers["X-Signature"];
+
+            var body = JsonSerializer.Serialize(request);
+
+            if (!_securityHeaderService.VerifySignature("POST", "api/auth/change-password", body, clientId, timeStamp, signature))
+            {
+                return Unauthorized("Invalid signature");
+            }
+
+            var user = await _userImplementation.GetUserById(int.Parse(clientId));
+
             if (user == null)
             {
                 return NotFound(new { Message = "User not found" });
             }
 
-            if (user.Password != BCrypt.Net.BCrypt.HashPassword(model.CurrentPassword))  
+            if(!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.Password))
                 return BadRequest("Old password is incorrect.");
 
-            user.Password = BCrypt.Net.BCrypt.HashPassword(model.NewPassword);  
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+            var updatePassword = await _userImplementation.UpdatePassword(int.Parse(clientId), BCrypt.Net.BCrypt.HashPassword(request.NewPassword));
+            
+            if(!updatePassword)
+                return BadRequest("Cannot change password");
 
             return Ok(new { Message = "Password changed successfully." });
         }

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using CrudApi.Services;
 using System.Text.Json;
+using CrudApi.Implementations;
 
 namespace CrudApi.Controllers
 {
@@ -19,18 +20,22 @@ namespace CrudApi.Controllers
         private readonly string _secretKey;
         private readonly PermissionService _permissionService;
         private readonly SecurityHeaderService _securityHeaderService;
+        private readonly UserImplementation _userImplementation;
+        private readonly RoleImplementation _roleImplementation;
 
-        public UserController(ApplicationDbContext context,  IConfiguration configuration, PermissionService permissionService, SecurityHeaderService securityHeaderService)
+        public UserController(ApplicationDbContext context,  IConfiguration configuration, PermissionService permissionService, SecurityHeaderService securityHeaderService, UserImplementation userImplementation, RoleImplementation roleImplementation)
         {
             _context = context;
             _configuration = configuration;
             _secretKey = _configuration["ApiSettings:SecretKey"];
             _permissionService = permissionService;
             _securityHeaderService = securityHeaderService;
+            _userImplementation = userImplementation;
+            _roleImplementation = roleImplementation;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUsers()
+        public async Task<IActionResult> GetUsers([FromQuery] string searchQuery = "")
         {
             var clientId = Request.Headers["X-Client-ID"];
             var timeStamp = Request.Headers["X-Time-Stamp"];
@@ -47,25 +52,8 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var users = await _context.Users
-                .Include(u => u.UserRoles) 
-                .ThenInclude(ur => ur.Role) 
-                .ToListAsync();
-
-            var userList = users.Select(user => new
-            {
-                user.Id,
-                user.Username,
-                user.FullName,
-                user.Email,
-                user.Status,
-                user.MaxRetry,
-                user.Retry,
-                RoleName = user.UserRoles.Select(ur => ur.Role.Name).FirstOrDefault()
-            });
-
-            return Ok(userList);
-
+            var users = await _userImplementation.GetUsersWithRoles(searchQuery);
+            return Ok(users);
         }
 
         [HttpGet("{id}")]
@@ -86,10 +74,7 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var user = await _context.Users
-                .Include(r => r.UserRoles)
-                .ThenInclude(rp => rp.Role)
-                .FirstOrDefaultAsync(r => r.Id == id);
+            var user = await _userImplementation.GetUserWithRole(id);
 
             if (user == null)
             {
@@ -98,7 +83,6 @@ namespace CrudApi.Controllers
 
             var RoleId = user.UserRoles.Select(ur => ur.Role.Id).FirstOrDefault();
 
-            // return Ok(user);
             return Ok(new
             {
                 user.Id,
@@ -143,10 +127,9 @@ namespace CrudApi.Controllers
                 Retry = request.Retry
             };
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            var userCreated = await _userImplementation.CreateUser(user);
 
-            if (request.RoleId != 0 || request.RoleId != null)  
+            if (request.RoleId != 0 && request.RoleId != null)  
             {
                 var userRole = new UserRoles
                 {
@@ -154,11 +137,9 @@ namespace CrudApi.Controllers
                     RoleId = request.RoleId  
                 };
 
-                _context.UserRoles.Add(userRole);
-                await _context.SaveChangesAsync();
+                var roleCreated = await _roleImplementation.CreateUserRole(userRole);
             }
 
-            // return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
             return Ok(user);
         }
 
@@ -182,7 +163,7 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var user = await _context.Users.FindAsync(id);
+            var user = await _userImplementation.GetUserById(id);
 
             if (user == null)
             {
@@ -200,16 +181,23 @@ namespace CrudApi.Controllers
             user.MaxRetry = request.MaxRetry;
             user.Retry = request.Retry;
 
-            // _context.Users.Update(user);
+            var isUpdated = await _userImplementation.UpdateUser(user);
 
-            var userRole = await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == id);
+            if (!isUpdated)
+            {
+                return StatusCode(500, "Error updating user");
+            }
+
+            var userRole = await _roleImplementation.GetUserRoleById(id);
 
             if (userRole != null)
             {
                 if (userRole.RoleId != request.RoleId) 
                 {
-                    _context.UserRoles.Remove(userRole);
-                    await _context.SaveChangesAsync(); 
+                    var deleteUserRole = await _roleImplementation.DeleteUserRole(userRole.UserId, userRole.RoleId);
+                    
+                    if(!deleteUserRole)
+                        return StatusCode(500, "Error updating user role");
 
                     if (request.RoleId != 0)
                     {
@@ -218,7 +206,7 @@ namespace CrudApi.Controllers
                             UserId = id,
                             RoleId = request.RoleId
                         };
-                        _context.UserRoles.Add(newUserRole);
+                        var roleCreated = await _roleImplementation.CreateUserRole(newUserRole);
                     }
                 }
             }
@@ -229,7 +217,7 @@ namespace CrudApi.Controllers
                     UserId = id,
                     RoleId = request.RoleId
                 };
-                _context.UserRoles.Add(newUserRole);
+                var roleCreated = await _roleImplementation.CreateUserRole(newUserRole);
             }
 
             await _context.SaveChangesAsync();
@@ -254,15 +242,17 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var user = await _context.Users.FindAsync(id);
+            var user = await _userImplementation.GetUserById(id);
 
             if (user == null)
             {
                 return NotFound();
             }
 
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
+            var deleteUser = await _userImplementation.DeleteUser(user);
+
+            if(!deleteUser)
+                return StatusCode(500, "Error updating user role");
 
             return NoContent();
         }

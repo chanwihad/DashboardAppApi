@@ -20,6 +20,12 @@ namespace CrudApi.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+            
+            foreach (var entity in modelBuilder.Model.GetEntityTypes())
+            {
+                var tableName = entity.GetTableName();
+                entity.SetTableName("can_" + tableName.ToLower());
+            }
 
             modelBuilder.Entity<UserRoles>()
                 .HasKey(ur => new { ur.UserId, ur.RoleId });
@@ -34,7 +40,6 @@ namespace CrudApi.Data
                 .WithMany(r => r.UserRoles)
                 .HasForeignKey(ur => ur.RoleId);
 
-            // Mengatur relasi many-to-many untuk RoleMenus
             modelBuilder.Entity<RoleMenus>()
                 .HasKey(rm => new { rm.RoleId, rm.MenuId });
 

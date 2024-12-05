@@ -7,6 +7,7 @@ using CrudApi.Services;
 using System.Text;
 using System.Security.Cryptography;
 using System.Text.Json;
+using CrudApi.Implementations;
 
 namespace CrudApi.Controllers
 {
@@ -15,19 +16,19 @@ namespace CrudApi.Controllers
     [ApiController]
     public class ProductsController : ControllerBase
     {
-        private readonly ProductService _productService;
+        private readonly ProductImplementation _productImplementation;
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly string _secretKey;
         private readonly PermissionService _permissionService;
         private readonly SecurityHeaderService _securityHeaderService;
 
-        public ProductsController(ApplicationDbContext context, IConfiguration configuration, ProductService productService, PermissionService permissionService, SecurityHeaderService securityHeaderService)
+        public ProductsController(ApplicationDbContext context, IConfiguration configuration, ProductImplementation productImplementation, PermissionService permissionService, SecurityHeaderService securityHeaderService)
         {
             _context = context;
             _configuration = configuration;
             _secretKey = _configuration["ApiSettings:SecretKey"];
-            _productService = productService;
+            _productImplementation = productImplementation;
             _permissionService = permissionService;
             _securityHeaderService = securityHeaderService;
         }
@@ -51,7 +52,7 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            return await _productService.GetProductsAsync();
+            return await _productImplementation.GetProductsAsync();
         }
 
         [HttpGet("{id}")]
@@ -72,7 +73,7 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var product = await _productService.GetProductByIdAsync(id);
+            var product = await _productImplementation.GetProductByIdAsync(id);
             if (product == null)
             {
                 return NotFound();
@@ -100,7 +101,7 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var createdProduct = await _productService.CreateProductAsync(product);
+            var createdProduct = await _productImplementation.CreateProductAsync(product);
             return CreatedAtAction(nameof(GetProduct), new { id = createdProduct.Id }, createdProduct);
         }
 
@@ -125,7 +126,7 @@ namespace CrudApi.Controllers
             }
 
             if (id != product.Id) return BadRequest();
-            var updatedProduct = await _productService.UpdateProductAsync(product);
+            var updatedProduct = await _productImplementation.UpdateProductAsync(product);
             return Ok(updatedProduct);
         }
 
@@ -149,7 +150,7 @@ namespace CrudApi.Controllers
 
             var product = await _context.Products.FindAsync(id);
             if (product == null) return NotFound();
-            await _productService.DeleteProductAsync(id);
+            await _productImplementation.DeleteProductAsync(id);
             return NoContent();
         }
     }
