@@ -34,6 +34,13 @@ namespace CrudApi.Implementations
             return user;
         }
 
+        public async Task<User> GetUserByEmail(string email)
+        {
+            var sql = @"SELECT * FROM can_users WHERE ""Email"" = @Email";
+            var user = await _dbConnection.QueryFirstOrDefaultAsync<User>(sql, new { Email = email });
+            return user;
+        }
+
         public async Task<User> GetUserForLogin(string username)
         {
             // var sql = @"
@@ -150,6 +157,25 @@ namespace CrudApi.Implementations
             var sql = @"DELETE FROM can_users WHERE ""Id"" = @Id";
             var affectedRows = await _dbConnection.ExecuteAsync(sql, new { Id = model.Id });
             return affectedRows > 0;
+        }
+
+        public async Task<PasswordReset> NewPasswordReset(PasswordReset model)
+        {
+            var sql = @"
+                INSERT INTO can_passwordresets (""Email"", ""VerificationCode"", ""ExpiryTime"")
+                VALUES (@Email, @VerificationCode, @ExpiryTime)
+                RETURNING ""Id""";
+
+            var id = await _dbConnection.ExecuteScalarAsync<int>(sql, model);
+            model.Id = id;
+            return model;
+        }
+
+        public async Task<PasswordReset> GetPasswordReset(VerificationRequest model)
+        {
+            var sql = @"SELECT * FROM can_passwordresets WHERE ""Email"" = @Email AND ""VerificationCode"" = @Code";
+            var query = await _dbConnection.QueryFirstOrDefaultAsync<PasswordReset>(sql, new { Email = model.Email, Code = model.Code });
+            return query;
         }
     }
 }

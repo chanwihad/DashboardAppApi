@@ -11,6 +11,7 @@ namespace CrudApi.Data
         public DbSet<UserRoles> UserRoles { get; set; }
         public DbSet<RoleMenus> RoleMenus { get; set; } 
         public DbSet<Product> Products { get; set; }
+        public DbSet<PasswordReset> PasswordResets { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)

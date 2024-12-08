@@ -9710,19 +9710,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Kings\\.nuget\\packages\\": {}
+    "/Users/chandra/.nuget/packages/": {},
+    "/usr/local/share/dotnet/sdk/NuGetFallbackFolder": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Kings\\Documents\\Project\\DashboardApp\\DashboardAppApi\\CrudApi.csproj",
+      "projectUniqueName": "/Users/chandra/Documents/SKRIPSI/Projek/DashboardAppFix/DashboardAppApi/CrudApi.csproj",
       "projectName": "CrudApi",
-      "projectPath": "C:\\Users\\Kings\\Documents\\Project\\DashboardApp\\DashboardAppApi\\CrudApi.csproj",
-      "packagesPath": "C:\\Users\\Kings\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Kings\\Documents\\Project\\DashboardApp\\DashboardAppApi\\obj\\",
+      "projectPath": "/Users/chandra/Documents/SKRIPSI/Projek/DashboardAppFix/DashboardAppApi/CrudApi.csproj",
+      "packagesPath": "/Users/chandra/.nuget/packages/",
+      "outputPath": "/Users/chandra/Documents/SKRIPSI/Projek/DashboardAppFix/DashboardAppApi/obj/",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "/usr/local/share/dotnet/sdk/NuGetFallbackFolder"
+      ],
       "configFilePaths": [
-        "C:\\Users\\Kings\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/Users/chandra/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -9809,7 +9813,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.404/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.403/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

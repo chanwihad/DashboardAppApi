@@ -6,33 +6,33 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CrudApi.Migrations
 {
     /// <inheritdoc />
-    public partial class initiateMigrate : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Menus",
+                name: "can_menus",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "text", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
-                    Level1 = table.Column<string>(type: "text", nullable: false),
-                    Level2 = table.Column<string>(type: "text", nullable: false),
-                    Level3 = table.Column<string>(type: "text", nullable: false),
-                    Level4 = table.Column<string>(type: "text", nullable: false),
-                    Icon = table.Column<string>(type: "text", nullable: false),
+                    Level1 = table.Column<string>(type: "text", nullable: true),
+                    Level2 = table.Column<string>(type: "text", nullable: true),
+                    Level3 = table.Column<string>(type: "text", nullable: true),
+                    Level4 = table.Column<string>(type: "text", nullable: true),
+                    Icon = table.Column<string>(type: "text", nullable: true),
                     Url = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Menus", x => x.Id);
+                    table.PrimaryKey("PK_can_menus", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Products",
+                name: "can_products",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -42,11 +42,11 @@ namespace CrudApi.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Products", x => x.Id);
+                    table.PrimaryKey("PK_can_products", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Roles",
+                name: "can_roles",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -60,11 +60,11 @@ namespace CrudApi.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Roles", x => x.Id);
+                    table.PrimaryKey("PK_can_roles", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Users",
+                name: "can_users",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -79,11 +79,11 @@ namespace CrudApi.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Users", x => x.Id);
+                    table.PrimaryKey("PK_can_users", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "RoleMenus",
+                name: "can_rolemenus",
                 columns: table => new
                 {
                     RoleId = table.Column<int>(type: "integer", nullable: false),
@@ -91,23 +91,23 @@ namespace CrudApi.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RoleMenus", x => new { x.RoleId, x.MenuId });
+                    table.PrimaryKey("PK_can_rolemenus", x => new { x.RoleId, x.MenuId });
                     table.ForeignKey(
-                        name: "FK_RoleMenus_Menus_MenuId",
+                        name: "FK_can_rolemenus_can_menus_MenuId",
                         column: x => x.MenuId,
-                        principalTable: "Menus",
+                        principalTable: "can_menus",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_RoleMenus_Roles_RoleId",
+                        name: "FK_can_rolemenus_can_roles_RoleId",
                         column: x => x.RoleId,
-                        principalTable: "Roles",
+                        principalTable: "can_roles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "UserRoles",
+                name: "can_userroles",
                 columns: table => new
                 {
                     UserId = table.Column<int>(type: "integer", nullable: false),
@@ -115,29 +115,29 @@ namespace CrudApi.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserRoles", x => new { x.UserId, x.RoleId });
+                    table.PrimaryKey("PK_can_userroles", x => new { x.UserId, x.RoleId });
                     table.ForeignKey(
-                        name: "FK_UserRoles_Roles_RoleId",
+                        name: "FK_can_userroles_can_roles_RoleId",
                         column: x => x.RoleId,
-                        principalTable: "Roles",
+                        principalTable: "can_roles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_UserRoles_Users_UserId",
+                        name: "FK_can_userroles_can_users_UserId",
                         column: x => x.UserId,
-                        principalTable: "Users",
+                        principalTable: "can_users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_RoleMenus_MenuId",
-                table: "RoleMenus",
+                name: "IX_can_rolemenus_MenuId",
+                table: "can_rolemenus",
                 column: "MenuId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserRoles_RoleId",
-                table: "UserRoles",
+                name: "IX_can_userroles_RoleId",
+                table: "can_userroles",
                 column: "RoleId");
         }
 
@@ -145,22 +145,22 @@ namespace CrudApi.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "can_products");
 
             migrationBuilder.DropTable(
-                name: "RoleMenus");
+                name: "can_rolemenus");
 
             migrationBuilder.DropTable(
-                name: "UserRoles");
+                name: "can_userroles");
 
             migrationBuilder.DropTable(
-                name: "Menus");
+                name: "can_menus");
 
             migrationBuilder.DropTable(
-                name: "Roles");
+                name: "can_roles");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "can_users");
         }
     }
 }

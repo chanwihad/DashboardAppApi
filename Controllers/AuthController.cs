@@ -158,5 +158,54 @@ namespace CrudApi.Controllers
 
             return Ok(new { Message = "Password changed successfully." });
         }
+
+        [HttpPost("send-verif")]
+        public async Task<IActionResult> SendVerificationCode([FromBody] string email)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                return BadRequest(new { message = "Email is required." });
+            }
+
+            var user = await _userImplementation.GetUserByEmail(email);
+            if (user == null)
+            {
+                return NotFound(new { message = "Email not found." });
+            }
+
+            var verificationCode = new Random().Next(100000, 999999).ToString();
+            var expiryTime = DateTime.UtcNow.AddMinutes(5);
+
+            var passwordReset = new PasswordReset
+            {
+                Email = email,
+                VerificationCode = verificationCode,
+                ExpiryTime = expiryTime
+            };
+
+            var newPasswordReset = await _userImplementation.NewPasswordReset(passwordReset);
+
+            Console.WriteLine($"Verification code for {email}: {verificationCode}");
+
+            return Ok(new { code = verificationCode, email = email });
+        }
+
+        [HttpPost("Verify-code")]
+        public async Task<IActionResult> VerifyCode([FromBody] VerificationRequest request)
+        {
+            // var passwordReset = await _context.PasswordResets
+                // .FirstOrDefaultAsync(pr => pr.Email == request.Email && pr.VerificationCode == request.Code);
+
+            var passwordReset = await _userImplementation.GetPasswordReset(request);
+
+            if (passwordReset == null || passwordReset.ExpiryTime < DateTime.UtcNow)
+            {
+                return BadRequest(new { message = "Invalid or expired verification code." });
+            }
+
+            return Ok(new { email = request.Email });
+        }
+
+
     }
 }
