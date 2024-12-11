@@ -34,8 +34,8 @@ namespace CrudApi.Controllers
         }
 
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        [HttpGet("Get")]
+        public async Task<ActionResult<IEnumerable<Product>>> GetProductsOnly()
         {
             var clientId = Request.Headers["X-Client-ID"];
             var timeStamp = Request.Headers["X-Time-Stamp"];
@@ -53,6 +53,48 @@ namespace CrudApi.Controllers
             }
 
             return await _productImplementation.GetProductsAsync();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetProducts([FromQuery] int pageNumber, [FromQuery] int pageSize, [FromQuery] string searchQuery = "")
+        {
+            // var clientId = Request.Headers["X-Client-ID"];
+            // var timeStamp = Request.Headers["X-Time-Stamp"];
+            // var signature = Request.Headers["X-Signature"];
+
+            // var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/product");
+            // if (!hasPermission)
+            // {
+            //     return Forbid("You do not have permission to view product.");
+            // }
+
+            // if (!_securityHeaderService.VerifySignature("GET", "api/product", "", clientId, timeStamp, signature))
+            // {
+            //     return Unauthorized("Invalid signature");
+            // }
+
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest("Invalid pagination parameters.");
+            }
+
+            var (products, totalCount) = await _productImplementation.GetProductsFiltered(searchQuery, pageNumber, pageSize);
+
+            if (products == null || products.Count == 0)
+            {
+                return NotFound("No products found.");
+            }
+
+            var paginationResult = new
+            {
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                Products = products
+            };
+
+            return Ok(paginationResult);
         }
 
         [HttpGet("{id}")]

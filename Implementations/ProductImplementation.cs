@@ -23,6 +23,27 @@ namespace CrudApi.Implementations
             return products.ToList();
         }
 
+        public async Task<(List<Product>, int)> GetProductsFiltered(string search, int pageNumber, int pageSize)
+        {
+            var sql = @"SELECT * FROM can_products";
+            var countSql = @"SELECT COUNT(*) FROM can_products";
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                sql += @" WHERE ""Name"" ILIKE @Search OR ""Price"" ILIKE @Search";
+                countSql += @" WHERE ""Name"" ILIKE @Search OR ""Price"" ILIKE @Search";
+            }
+
+            sql += " ORDER BY \"Id\" Desc LIMIT @PageSize OFFSET @Offset";
+
+            var offset = (pageNumber - 1) * pageSize;
+
+            var totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { Search = $"%{search}%" });
+            var products = await _dbConnection.QueryAsync<Product>(sql, new { Search = $"%{search}%", PageSize = pageSize, Offset = offset });
+
+            return (products.ToList(), totalCount);
+        }
+
         public async Task<Product> GetProductByIdAsync(int id)
         {
             var sql = @"SELECT * FROM can_products WHERE ""Id"" = @Id"; 

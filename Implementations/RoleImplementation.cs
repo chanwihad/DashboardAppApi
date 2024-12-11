@@ -24,6 +24,27 @@ namespace CrudApi.Implementations
             return roles.ToList();
         }
 
+        public async Task<(List<Role>, int)> GetRolesFiltered(string search, int pageNumber, int pageSize)
+        {
+            var sql = @"SELECT * FROM can_roles";
+            var countSql = @"SELECT COUNT(*) FROM can_roles";
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                sql += @" WHERE ""Name"" ILIKE @Search OR ""Description"" ILIKE @Search";
+                countSql += @" WHERE ""Name"" ILIKE @Search OR ""Description"" ILIKE @Search";
+            }
+
+            sql += " ORDER BY \"Id\" Desc LIMIT @PageSize OFFSET @Offset";
+
+            var offset = (pageNumber - 1) * pageSize;
+
+            var totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { Search = $"%{search}%" });
+            var roles = await _dbConnection.QueryAsync<Role>(sql, new { Search = $"%{search}%", PageSize = pageSize, Offset = offset });
+
+            return (roles.ToList(), totalCount);
+        }
+
         public async Task<Role> GetRoleById(int id)
         {
             var sql = @"SELECT * FROM can_roles WHERE ""Id"" = @Id"; 

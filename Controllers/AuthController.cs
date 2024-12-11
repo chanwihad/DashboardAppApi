@@ -138,26 +138,26 @@ namespace CrudApi.Controllers
             return Ok(new { Message = "Password changed successfully." });
         }
 
-        [HttpPost("reset-password")]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel model)
-        {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
-            if (user == null)
-            {
-                return NotFound(new { Message = "User not found" });
-            }
+        // [HttpPost("reset-password")]
+        // public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordModel model)
+        // {
+        //     var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+        //     if (user == null)
+        //     {
+        //         return NotFound(new { Message = "User not found" });
+        //     }
 
-            // var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-            // var result = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
-            // var resetToken = Guid.NewGuid().ToString();
-            // user.PasswordResetToken = resetToken;
+        //     // var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        //     // var result = await _userManager.ResetPasswordAsync(user, token, model.NewPassword);
+        //     // var resetToken = Guid.NewGuid().ToString();
+        //     // user.PasswordResetToken = resetToken;
 
-            user.Password = BCrypt.Net.BCrypt.HashPassword("password");  
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+        //     user.Password = BCrypt.Net.BCrypt.HashPassword("password");  
+        //     _context.Users.Update(user);
+        //     await _context.SaveChangesAsync();
 
-            return Ok(new { Message = "Password changed successfully." });
-        }
+        //     return Ok(new { Message = "Password changed successfully." });
+        // }
 
         [HttpPost("send-verif")]
         public async Task<IActionResult> SendVerificationCode([FromBody] string email)
@@ -172,6 +172,8 @@ namespace CrudApi.Controllers
             {
                 return NotFound(new { message = "Email not found." });
             }
+
+            await _userImplementation.DeleteAllByEmail(email);
 
             var verificationCode = new Random().Next(100000, 999999).ToString();
             var expiryTime = DateTime.UtcNow.AddMinutes(5);
@@ -190,7 +192,7 @@ namespace CrudApi.Controllers
             return Ok(new { code = verificationCode, email = email });
         }
 
-        [HttpPost("Verify-code")]
+        [HttpPost("verify-code")]
         public async Task<IActionResult> VerifyCode([FromBody] VerificationRequest request)
         {
             // var passwordReset = await _context.PasswordResets
@@ -206,6 +208,23 @@ namespace CrudApi.Controllers
             return Ok(new { email = request.Email });
         }
 
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(NewPassword request)
+        {
+            var user = await _userImplementation.GetUserByEmail(request.Email);
+
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found" });
+            }
+
+            var updatePassword = await _userImplementation.UpdatePassword(user.Id, BCrypt.Net.BCrypt.HashPassword(request.Password));
+            
+            if(!updatePassword)
+                return BadRequest("Cannot change password");
+
+            return Ok(new { Message = "Password changed successfully." });
+        }
 
     }
 }

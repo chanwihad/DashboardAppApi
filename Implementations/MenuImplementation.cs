@@ -31,6 +31,26 @@ namespace CrudApi.Implementations
             return menus.ToList();
         }
 
+        public async Task<(List<Menu>, int)> GetMenusFiltered(string search, int pageNumber, int pageSize)
+        {
+            var sql = @"SELECT * FROM can_menus";
+            var countSql = @"SELECT COUNT(*) FROM can_menus";
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                sql += @" WHERE ""Name"" ILIKE @Search OR ""Description"" ILIKE @Search";
+                countSql += @" WHERE ""Name"" ILIKE @Search OR ""Description"" ILIKE @Search";
+            }
+
+            sql += " ORDER BY \"Id\" Desc LIMIT @PageSize OFFSET @Offset";
+
+            var offset = (pageNumber - 1) * pageSize;
+
+            var totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { Search = $"%{search}%" });
+            var menus = await _dbConnection.QueryAsync<Menu>(sql, new { Search = $"%{search}%", PageSize = pageSize, Offset = offset });
+
+            return (menus.ToList(), totalCount);
+        }
 
         public async Task<Menu> GetMenuById(int id)
         {

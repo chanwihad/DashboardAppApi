@@ -34,8 +34,8 @@ namespace CrudApi.Controllers
             _roleImplementation = roleImplementation;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetUsers([FromQuery] string searchQuery = "")
+        [HttpGet("Get")]
+        public async Task<IActionResult> GetUsersOnly([FromQuery] string searchQuery = "")
         {
             var clientId = Request.Headers["X-Client-ID"];
             var timeStamp = Request.Headers["X-Time-Stamp"];
@@ -54,6 +54,48 @@ namespace CrudApi.Controllers
 
             var users = await _userImplementation.GetUsersWithRoles(searchQuery);
             return Ok(users);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetUsers([FromQuery] int pageNumber, [FromQuery] int pageSize, [FromQuery] string searchQuery = "")
+        {
+            var clientId = Request.Headers["X-Client-ID"];
+            var timeStamp = Request.Headers["X-Time-Stamp"];
+            var signature = Request.Headers["X-Signature"];
+
+            var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/user");
+            if (!hasPermission)
+            {
+                return Forbid("You do not have permission to view user.");
+            }
+
+            if (!_securityHeaderService.VerifySignature("GET", "api/user", "", clientId, timeStamp, signature))
+            {
+                return Unauthorized("Invalid signature");
+            }
+
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest("Invalid pagination parameters.");
+            }
+
+            var (users, totalCount) = await _userImplementation.GetUsersFiltered(searchQuery, pageNumber, pageSize);
+
+            if (users == null || users.Count == 0)
+            {
+                return NotFound("No users found.");
+            }
+
+            var paginationResult = new
+            {
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                Users = users
+            };
+
+            return Ok(paginationResult);
         }
 
         [HttpGet("{id}")]

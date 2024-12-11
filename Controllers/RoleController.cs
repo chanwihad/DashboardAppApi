@@ -35,7 +35,7 @@ namespace CrudApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetRoles([FromQuery] string searchQuery = "")
+        public async Task<IActionResult> GetRoles([FromQuery] int pageNumber, [FromQuery] int pageSize, [FromQuery] string searchQuery = "")
         {
             var clientId = Request.Headers["X-Client-ID"];
             var timeStamp = Request.Headers["X-Time-Stamp"];
@@ -52,9 +52,23 @@ namespace CrudApi.Controllers
                 return Unauthorized("Invalid signature");
             }
 
-            var roles = await _roleImplementation.GetRoles(searchQuery);
+            var (roles, totalCount)  = await _roleImplementation.GetRolesFiltered(searchQuery, pageNumber, pageSize);
 
-            return Ok(roles);
+            if (roles == null || roles.Count == 0)
+            {
+                return NotFound("No roles found.");
+            }
+
+            var paginationResult = new
+            {
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                Roles = roles
+            };
+
+            return Ok(paginationResult);
         }
 
         [HttpGet("{id}")]

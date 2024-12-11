@@ -32,23 +32,23 @@ namespace CrudApi.Controllers
             _menuImplementation = menuImplementation;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetMenus([FromQuery] string searchQuery = "")
+        [HttpGet("Get")]
+        public async Task<IActionResult> GetMenusOnly([FromQuery] string searchQuery = "")
         {
-            // var clientId = Request.Headers["X-Client-ID"];
-            // var timeStamp = Request.Headers["X-Time-Stamp"];
-            // var signature = Request.Headers["X-Signature"];
+            var clientId = Request.Headers["X-Client-ID"];
+            var timeStamp = Request.Headers["X-Time-Stamp"];
+            var signature = Request.Headers["X-Signature"];
 
-            // var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/menu");
-            // if (!hasPermission)
-            // {
-            //     return Forbid("You do not have permission to view menu.");
-            // }
+            var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/menu");
+            if (!hasPermission)
+            {
+                return Forbid("You do not have permission to view menu.");
+            }
 
-            // if (!_securityHeaderService.VerifySignature("GET", "api/menu", "", clientId, timeStamp, signature))
-            // {
-            //     return Unauthorized("Invalid signature");
-            // }
+            if (!_securityHeaderService.VerifySignature("GET", "api/menu", "", clientId, timeStamp, signature))
+            {
+                return Unauthorized("Invalid signature");
+            }
 
             var menus = await _menuImplementation.GetMenus(searchQuery);
             if (menus == null || menus.Count == 0)
@@ -58,6 +58,49 @@ namespace CrudApi.Controllers
 
             return Ok(menus);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetMenus([FromQuery] int pageNumber, [FromQuery] int pageSize, [FromQuery] string searchQuery = "")
+        {
+            var clientId = Request.Headers["X-Client-ID"];
+            var timeStamp = Request.Headers["X-Time-Stamp"];
+            var signature = Request.Headers["X-Signature"];
+
+            var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/menu");
+            if (!hasPermission)
+            {
+                return Forbid("You do not have permission to view menu.");
+            }
+
+            if (!_securityHeaderService.VerifySignature("GET", "api/menu", "", clientId, timeStamp, signature))
+            {
+                return Unauthorized("Invalid signature");
+            }
+
+            if (pageNumber < 1 || pageSize < 1)
+            {
+                return BadRequest("Invalid pagination parameters.");
+            }
+
+            var (menus, totalCount) = await _menuImplementation.GetMenusFiltered(searchQuery, pageNumber, pageSize);
+
+            if (menus == null || menus.Count == 0)
+            {
+                return NotFound("No menus found.");
+            }
+
+            var paginationResult = new
+            {
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                Menus = menus
+            };
+
+            return Ok(paginationResult);
+        }
+
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetMenu(int id)

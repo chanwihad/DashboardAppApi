@@ -27,6 +27,34 @@ namespace CrudApi.Implementations
             return users.ToList();
         }
 
+        public async Task<(List<UserRequest>, int)> GetUsersFiltered(string search, int pageNumber, int pageSize)
+        {
+            var sql = @"SELECT u.""Id"", u.""Username"", u.""FullName"", u.""Email"", u.""Status"", u.""MaxRetry"", u.""Retry"", r.""Name"" AS RoleName
+                FROM can_users u
+                INNER JOIN can_userroles ur ON u.""Id"" = ur.""UserId""
+                INNER JOIN can_roles r ON ur.""RoleId"" = r.""Id""";
+            var countSql = @"SELECT u.""Id"", u.""Username"", u.""FullName"", u.""Email"", u.""Status"", u.""MaxRetry"", u.""Retry"", r.""Name"" AS RoleName
+                FROM can_users u
+                INNER JOIN can_userroles ur ON u.""Id"" = ur.""UserId""
+                INNER JOIN can_roles r ON ur.""RoleId"" = r.""Id""";
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                sql += @" WHERE ""Username"" ILIKE @Search OR ""FullName"" ILIKE @Search OR ""Email"" ILIKE @Search OR ""Status"" ILIKE @Search";
+
+                countSql += @" WHERE ""Username"" ILIKE @Search OR ""FullName"" ILIKE @Search OR ""Email"" ILIKE @Search OR ""Status"" ILIKE @Search";
+            }
+
+            sql += " ORDER BY \"Id\" Desc LIMIT @PageSize OFFSET @Offset";
+
+            var offset = (pageNumber - 1) * pageSize;
+
+            var totalCount = await _dbConnection.ExecuteScalarAsync<int>(countSql, new { Search = $"%{search}%" });
+            var users = await _dbConnection.QueryAsync<UserRequest>(sql, new { Search = $"%{search}%", PageSize = pageSize, Offset = offset });
+
+            return (users.ToList(), totalCount);
+        }
+
         public async Task<User> GetUserById(int id)
         {
             var sql = @"SELECT * FROM can_users WHERE ""Id"" = @Id";
@@ -176,6 +204,12 @@ namespace CrudApi.Implementations
             var sql = @"SELECT * FROM can_passwordresets WHERE ""Email"" = @Email AND ""VerificationCode"" = @Code";
             var query = await _dbConnection.QueryFirstOrDefaultAsync<PasswordReset>(sql, new { Email = model.Email, Code = model.Code });
             return query;
+        }
+
+        public async Task DeleteAllByEmail(string email)
+        {
+            var sql = @"DELETE FROM can_passwordresets WHERE ""Email"" = @Email";
+            var query = await _dbConnection.ExecuteAsync(sql, new {Email = email});
         }
     }
 }
