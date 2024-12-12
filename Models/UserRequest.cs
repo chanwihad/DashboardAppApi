@@ -9,6 +9,7 @@ namespace CrudApi.Models
         public string Status { get; set; }
         public int MaxRetry { get; set; }
         public int Retry { get; set; }
+        public int RoleId { get; set; } 
         public string RoleName { get; set; } 
     }
 

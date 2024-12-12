@@ -70,6 +70,33 @@ namespace CrudApi.Controllers
 
             return Ok(paginationResult);
         }
+        
+        [HttpGet("Get")]
+        public async Task<IActionResult> GetRolesOnly([FromQuery] string searchQuery = "")
+        {
+            var clientId = Request.Headers["X-Client-ID"];
+            var timeStamp = Request.Headers["X-Time-Stamp"];
+            var signature = Request.Headers["X-Signature"];
+
+            var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/role");
+            if (!hasPermission)
+            {
+                return Forbid("You do not have permission to view role.");
+            }
+
+            if (!_securityHeaderService.VerifySignature("GET", "api/role", "", clientId, timeStamp, signature))
+            {
+                return Unauthorized("Invalid signature");
+            }
+
+            var roles = await _roleImplementation.GetRoles(searchQuery);
+            if (roles == null || roles.Count == 0)
+            {
+                return NotFound("No roles found");
+            }
+
+            return Ok(roles);
+        }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetRole(int id)

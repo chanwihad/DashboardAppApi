@@ -29,11 +29,11 @@ namespace CrudApi.Implementations
 
         public async Task<(List<UserRequest>, int)> GetUsersFiltered(string search, int pageNumber, int pageSize)
         {
-            var sql = @"SELECT u.""Id"", u.""Username"", u.""FullName"", u.""Email"", u.""Status"", u.""MaxRetry"", u.""Retry"", r.""Name"" AS RoleName
+            var sql = @"SELECT u.""Id"", u.""Username"", u.""FullName"", u.""Email"", u.""Status"", u.""MaxRetry"", u.""Retry"", r.""Id"" AS RoleId, r.""Name"" AS RoleName
                 FROM can_users u
                 INNER JOIN can_userroles ur ON u.""Id"" = ur.""UserId""
                 INNER JOIN can_roles r ON ur.""RoleId"" = r.""Id""";
-            var countSql = @"SELECT u.""Id"", u.""Username"", u.""FullName"", u.""Email"", u.""Status"", u.""MaxRetry"", u.""Retry"", r.""Name"" AS RoleName
+            var countSql = @"SELECT u.""Id"", u.""Username"", u.""FullName"", u.""Email"", u.""Status"", u.""MaxRetry"", u.""Retry"", r.""Id"" AS RoleId, r.""Name"" AS RoleName
                 FROM can_users u
                 INNER JOIN can_userroles ur ON u.""Id"" = ur.""UserId""
                 INNER JOIN can_roles r ON ur.""RoleId"" = r.""Id""";
