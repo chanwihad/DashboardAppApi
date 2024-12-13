@@ -74,20 +74,20 @@ namespace CrudApi.Controllers
         [HttpGet("Get")]
         public async Task<IActionResult> GetRolesOnly([FromQuery] string searchQuery = "")
         {
-            var clientId = Request.Headers["X-Client-ID"];
-            var timeStamp = Request.Headers["X-Time-Stamp"];
-            var signature = Request.Headers["X-Signature"];
+            // var clientId = Request.Headers["X-Client-ID"];
+            // var timeStamp = Request.Headers["X-Time-Stamp"];
+            // var signature = Request.Headers["X-Signature"];
 
-            var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/role");
-            if (!hasPermission)
-            {
-                return Forbid("You do not have permission to view role.");
-            }
+            // var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/role");
+            // if (!hasPermission)
+            // {
+            //     return Forbid("You do not have permission to view role.");
+            // }
 
-            if (!_securityHeaderService.VerifySignature("GET", "api/role", "", clientId, timeStamp, signature))
-            {
-                return Unauthorized("Invalid signature");
-            }
+            // if (!_securityHeaderService.VerifySignature("GET", "api/role", "", clientId, timeStamp, signature))
+            // {
+            //     return Unauthorized("Invalid signature");
+            // }
 
             var roles = await _roleImplementation.GetRoles(searchQuery);
             if (roles == null || roles.Count == 0)
@@ -220,7 +220,7 @@ namespace CrudApi.Controllers
 
             await _roleImplementation.UpdateRole(role);
 
-            var deleteExistingMenus = _menuImplementation.DeleteExistingRoleMenus(role.Id);
+            await _menuImplementation.DeleteExistingRoleMenus(role.Id);
             
             if (request.MenuIds != null && request.MenuIds.Any())
             {

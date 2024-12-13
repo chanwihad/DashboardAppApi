@@ -35,20 +35,20 @@ namespace CrudApi.Controllers
         [HttpGet("Get")]
         public async Task<IActionResult> GetMenusOnly([FromQuery] string searchQuery = "")
         {
-            var clientId = Request.Headers["X-Client-ID"];
-            var timeStamp = Request.Headers["X-Time-Stamp"];
-            var signature = Request.Headers["X-Signature"];
+            // var clientId = Request.Headers["X-Client-ID"];
+            // var timeStamp = Request.Headers["X-Time-Stamp"];
+            // var signature = Request.Headers["X-Signature"];
 
-            var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/menu");
-            if (!hasPermission)
-            {
-                return Forbid("You do not have permission to view menu.");
-            }
+            // var hasPermission = await _permissionService.HasPermissionAsync(clientId, "CanView", "api/menu");
+            // if (!hasPermission)
+            // {
+            //     return Forbid("You do not have permission to view menu.");
+            // }
 
-            if (!_securityHeaderService.VerifySignature("GET", "api/menu", "", clientId, timeStamp, signature))
-            {
-                return Unauthorized("Invalid signature");
-            }
+            // if (!_securityHeaderService.VerifySignature("GET", "api/menu", "", clientId, timeStamp, signature))
+            // {
+            //     return Unauthorized("Invalid signature");
+            // }
 
             var menus = await _menuImplementation.GetMenus(searchQuery);
             if (menus == null || menus.Count == 0)

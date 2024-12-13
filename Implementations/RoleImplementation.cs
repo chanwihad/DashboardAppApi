@@ -27,6 +27,10 @@ namespace CrudApi.Implementations
         public async Task<(List<Role>, int)> GetRolesFiltered(string search, int pageNumber, int pageSize)
         {
             var sql = @"SELECT * FROM can_roles";
+            // var sql = @"SELECT r.""Id"", r.""Name"", r.""Description"", r.""CanView"", r.""CanCreate"", r.""CanUpdate"", r.""CanDelete"", m.""Id"" AS MenuId, m.""Name"" AS MenuName
+            //     FROM can_roles r
+            //     INNER JOIN can_roleMenus rm ON r.""Id"" = rm.""UserId""
+            //     INNER JOIN can_menus m ON rm.""RoleId"" = m.""Id""";
             var countSql = @"SELECT COUNT(*) FROM can_roles";
 
             if (!string.IsNullOrWhiteSpace(search))

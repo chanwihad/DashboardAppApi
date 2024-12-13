@@ -33,10 +33,7 @@ namespace CrudApi.Implementations
                 FROM can_users u
                 INNER JOIN can_userroles ur ON u.""Id"" = ur.""UserId""
                 INNER JOIN can_roles r ON ur.""RoleId"" = r.""Id""";
-            var countSql = @"SELECT u.""Id"", u.""Username"", u.""FullName"", u.""Email"", u.""Status"", u.""MaxRetry"", u.""Retry"", r.""Id"" AS RoleId, r.""Name"" AS RoleName
-                FROM can_users u
-                INNER JOIN can_userroles ur ON u.""Id"" = ur.""UserId""
-                INNER JOIN can_roles r ON ur.""RoleId"" = r.""Id""";
+            var countSql = @"SELECT COUNT(*) FROM can_users";
 
             if (!string.IsNullOrWhiteSpace(search))
             {

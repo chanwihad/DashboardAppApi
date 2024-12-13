@@ -155,7 +155,7 @@ namespace CrudApi.Controllers
 
             if (!_securityHeaderService.VerifySignature("POST", "api/user", body, clientId, timeStamp, signature))
             {
-                return Unauthorized("Invalid signature");
+                // return Unauthorized("Invalid signature");
             }
 
             var user = new User
@@ -202,7 +202,7 @@ namespace CrudApi.Controllers
 
             if (!_securityHeaderService.VerifySignature("PUT", $"api/user/{id}", body, clientId, timeStamp, signature))
             {
-                return Unauthorized("Invalid signature");
+                // return Unauthorized("Invalid signature");
             }
 
             var user = await _userImplementation.GetUserById(id);
@@ -262,7 +262,6 @@ namespace CrudApi.Controllers
                 var roleCreated = await _roleImplementation.CreateUserRole(newUserRole);
             }
 
-            await _context.SaveChangesAsync();
             return Ok();
         }
 

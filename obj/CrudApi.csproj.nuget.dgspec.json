@@ -1,23 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "/Users/chandra/Documents/SKRIPSI/Projek/DashboardBlazor/Backend/DashboardAppApi/CrudApi.csproj": {}
+    "C:\\Users\\Kings\\Documents\\Project\\Finishing\\DashboardAppApi\\CrudApi.csproj": {}
   },
   "projects": {
-    "/Users/chandra/Documents/SKRIPSI/Projek/DashboardBlazor/Backend/DashboardAppApi/CrudApi.csproj": {
+    "C:\\Users\\Kings\\Documents\\Project\\Finishing\\DashboardAppApi\\CrudApi.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/chandra/Documents/SKRIPSI/Projek/DashboardBlazor/Backend/DashboardAppApi/CrudApi.csproj",
+        "projectUniqueName": "C:\\Users\\Kings\\Documents\\Project\\Finishing\\DashboardAppApi\\CrudApi.csproj",
         "projectName": "CrudApi",
-        "projectPath": "/Users/chandra/Documents/SKRIPSI/Projek/DashboardBlazor/Backend/DashboardAppApi/CrudApi.csproj",
-        "packagesPath": "/Users/chandra/.nuget/packages/",
-        "outputPath": "/Users/chandra/Documents/SKRIPSI/Projek/DashboardBlazor/Backend/DashboardAppApi/obj/",
+        "projectPath": "C:\\Users\\Kings\\Documents\\Project\\Finishing\\DashboardAppApi\\CrudApi.csproj",
+        "packagesPath": "C:\\Users\\Kings\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Kings\\Documents\\Project\\Finishing\\DashboardAppApi\\obj\\",
         "projectStyle": "PackageReference",
-        "fallbackFolders": [
-          "/usr/local/share/dotnet/sdk/NuGetFallbackFolder"
-        ],
         "configFilePaths": [
-          "/Users/chandra/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\Kings\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -104,7 +101,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.403/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.404/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
